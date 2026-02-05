@@ -14,12 +14,6 @@ class Cali < Formula
     end
   end
 
-  on_linux do
-    if Hardware::CPU.intel?
-      url "https://github.com/magarcia/cali/releases/download/v#{version}/cali-#{version}-x86_64-unknown-linux-musl.tar.gz"
-      sha256 ""
-    end
-  end
 
   def install
     bin.install "cali"
