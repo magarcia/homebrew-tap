@@ -1,27 +1,26 @@
 class Cuentica < Formula
   desc "Command-line client for the Cuéntica API"
   homepage "https://github.com/magarcia/cuentica-cli"
-  version "0.1.0"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/magarcia/cuentica-cli/releases/download/v#{version}/cuentica_v#{version}_darwin_arm64.tar.gz"
+      url "https://github.com/magarcia/cuentica-cli/releases/download/v0.1.0/cuentica_v0.1.0_darwin_arm64.tar.gz"
       sha256 "b54741f226d9303a150afae1f216e07d1076cdb7deea47dba0f2bf38a9880feb"
     end
     on_intel do
-      url "https://github.com/magarcia/cuentica-cli/releases/download/v#{version}/cuentica_v#{version}_darwin_amd64.tar.gz"
+      url "https://github.com/magarcia/cuentica-cli/releases/download/v0.1.0/cuentica_v0.1.0_darwin_amd64.tar.gz"
       sha256 "b229b81ad307b19d16409275f7bb88f46a386e56daa5e7773625a9acd71ff271"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/magarcia/cuentica-cli/releases/download/v#{version}/cuentica_v#{version}_linux_arm64.tar.gz"
+      url "https://github.com/magarcia/cuentica-cli/releases/download/v0.1.0/cuentica_v0.1.0_linux_arm64.tar.gz"
       sha256 "f6a3ae24e79ccb1c23f3d10e08d6072fa67abec999142ee50a455f6082892ee1"
     end
     on_intel do
-      url "https://github.com/magarcia/cuentica-cli/releases/download/v#{version}/cuentica_v#{version}_linux_amd64.tar.gz"
+      url "https://github.com/magarcia/cuentica-cli/releases/download/v0.1.0/cuentica_v0.1.0_linux_amd64.tar.gz"
       sha256 "a4dc0ab1b5c008b5ac147abacff0b84d751b538c2e7db239ff8a30d5b160f4f8"
     end
   end

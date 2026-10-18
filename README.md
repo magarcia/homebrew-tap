@@ -57,4 +57,4 @@ brew test magarcia/tap/cuentica
 brew audit --strict --online magarcia/tap/cuentica
 ```
 
-For each stable Cuéntica release, update `Formula/cuentica.rb` with its version and the four archive SHA-256 values from `checksums.txt`. See the [Cuéntica release guide](https://github.com/magarcia/cuentica-cli/blob/main/docs/releasing.md#update-homebrew).
+For each stable Cuéntica release, update the four archive URLs and SHA-256 values in `Formula/cuentica.rb` using the release's `checksums.txt`. Homebrew infers the version from the URL. See the [Cuéntica release guide](https://github.com/magarcia/cuentica-cli/blob/main/docs/releasing.md#update-homebrew).
