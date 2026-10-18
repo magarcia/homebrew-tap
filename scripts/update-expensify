@@ -69,7 +69,6 @@ def render_formula(release):
         "class Expensify < Formula",
         '  desc "Manage New Expensify expenses, reports, and workspaces"',
         f'  homepage "https://github.com/{REPOSITORY}"',
-        f'  version "{version}"',
         '  license "MIT"',
     ]
     for system, ruby_system in (("darwin", "macos"), ("linux", "linux")):
@@ -79,8 +78,8 @@ def render_formula(release):
                 lines.append("")
             lines.extend((
                 f"    on_{ruby_arch} do",
-                f'      url "https://github.com/{REPOSITORY}/releases/download/v#{{version}}/'
-                f'expensify_v#{{version}}_{system}_{arch}.tar.gz"',
+                f'      url "https://github.com/{REPOSITORY}/releases/download/v{version}/'
+                f'expensify_v{version}_{system}_{arch}.tar.gz"',
                 f'      sha256 "{checksums[(system, arch)]}"',
                 "    end",
             ))
@@ -119,7 +118,11 @@ def update_formula(release, path=FORMULA):
     content = render_formula(release)
     if path.exists():
         existing = path.read_text(encoding="utf-8")
-        current = re.search(r'^  version "([^"\n]+)"$', existing, flags=re.MULTILINE)
+        current = re.search(
+            rf'^ +url "https://github\.com/{re.escape(REPOSITORY)}/releases/download/v([^/"\n]+)/',
+            existing,
+            flags=re.MULTILINE,
+        )
         if current is None:
             raise ValueError("Existing formula has no recognizable version; refusing to replace it")
         requested = release["tag_name"][1:]

@@ -31,9 +31,13 @@ def release_fixture(version="0.1.0"):
 class ReleaseMetadataTests(unittest.TestCase):
     def test_renders_all_platforms_and_release_hashes(self):
         formula = updater.render_formula(release_fixture())
-        self.assertIn('  version "0.1.0"', formula)
+        self.assertNotIn('\n  version "', formula)
         for index, (system, arch) in enumerate(updater.PLATFORMS):
-            self.assertIn(f"expensify_v#{{version}}_{system}_{arch}.tar.gz", formula)
+            self.assertIn(
+                f"https://github.com/magarcia/expensify-cli/releases/download/v0.1.0/"
+                f"expensify_v0.1.0_{system}_{arch}.tar.gz",
+                formula,
+            )
             self.assertIn(f'sha256 "{index + 1:064x}"', formula)
         self.assertIn('pkgshare.install "skills"', formula)
         self.assertIn("--dry-run --no-input", formula)
@@ -123,7 +127,7 @@ class UpdateFormulaTests(unittest.TestCase):
     def test_upgrades_versions_numerically(self):
         updater.update_formula(release_fixture("0.9.0"), self.path)
         self.assertTrue(updater.update_formula(release_fixture("0.10.0"), self.path))
-        self.assertIn('version "0.10.0"', self.path.read_text(encoding="utf-8"))
+        self.assertIn('/releases/download/v0.10.0/', self.path.read_text(encoding="utf-8"))
 
     def test_rejects_downgrade_without_modifying_formula(self):
         updater.update_formula(release_fixture("1.2.0"), self.path)
@@ -146,6 +150,16 @@ class UpdateFormulaTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no recognizable version"):
             updater.update_formula(release_fixture(), self.path)
         self.assertEqual("unexpected content\n", self.path.read_text(encoding="utf-8"))
+
+    def test_version_must_come_from_canonical_release_url(self):
+        previous = updater.render_formula(release_fixture("1.2.0")).replace(
+            "https://github.com/magarcia/expensify-cli/releases/download/",
+            "https://example.com/releases/download/",
+        )
+        self.path.write_text(previous, encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "no recognizable version"):
+            updater.update_formula(release_fixture("1.3.0"), self.path)
+        self.assertEqual(previous, self.path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
