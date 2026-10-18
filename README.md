@@ -51,10 +51,11 @@ The updater reads the latest stable release from `magarcia/expensify-cli`. Set `
 
 ## Development
 
-Work from a checkout of this tap and link it into Homebrew:
+Use Homebrew's tap checkout for local installation checks. Edit the formula there before running these checks:
 
 ```sh
-brew tap magarcia/tap /path/to/homebrew-tap
+brew tap magarcia/tap
+cd "$(brew --repo magarcia/tap)"
 brew style Formula/expensify.rb
 brew install magarcia/tap/expensify
 brew test magarcia/tap/expensify
