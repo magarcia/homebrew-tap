@@ -17,11 +17,25 @@ brew update
 brew upgrade expensify
 ```
 
+## Cuéntica CLI
+
+Install [Cuéntica CLI](https://github.com/magarcia/cuentica-cli) with Homebrew:
+
+```sh
+brew install magarcia/tap/cuentica
+cuentica --version
+```
+
+Cuéntica supports macOS and Linux on Apple Silicon/ARM64 and Intel/AMD64. Homebrew selects the matching release binary and installs Bash, Zsh, and Fish completions. See the [CLI documentation](https://github.com/magarcia/cuentica-cli#readme) for authentication and commands.
+
+Upgrade with `brew update` followed by `brew upgrade magarcia/tap/cuentica`.
+
 ## Available formulae
 
 | Formula | Install | Description |
 |---------|---------|-------------|
 | [expensify](https://github.com/magarcia/expensify-cli) | `brew install magarcia/tap/expensify` | Manage Expensify expenses, reports, and workspaces |
+| [cuentica](https://github.com/magarcia/cuentica-cli) | `brew install magarcia/tap/cuentica` | Manage Cuéntica invoices, income, expenses, contacts, and documents |
 | [cali](https://github.com/magarcia/cali) | `brew install magarcia/tap/cali` | View calendar events in the terminal |
 | [cc2md](https://github.com/magarcia/cc2md) | `brew install magarcia/tap/cc2md` | Convert Claude Code session logs to Markdown |
 | [snapwin](https://github.com/magarcia/snapwin) | `brew install magarcia/tap/snapwin` | Capture macOS window screenshots |
@@ -49,7 +63,19 @@ git diff -- Formula/expensify.rb
 
 The updater reads the latest stable release from `magarcia/expensify-cli`. Set `GH_TOKEN` if you need authenticated GitHub API requests.
 
+## Updating Cuéntica
+
+The [Cuéntica workflow](https://github.com/magarcia/homebrew-tap/actions/workflows/cuentica.yml) checks installation, completions, functional behavior, style, and strict audits on macOS and Linux for both architectures.
+
+After each stable Cuéntica release, update the four archive URLs and SHA-256 values in `Formula/cuentica.rb` using the release's `checksums.txt`. Homebrew infers the version from the URL. See the [Cuéntica release guide](https://github.com/magarcia/cuentica-cli/blob/main/docs/releasing.md#update-homebrew).
+
 ## Development
+
+Keep the development checkout in `~/dev/homebrew-tap`:
+
+```sh
+git clone https://github.com/magarcia/homebrew-tap.git ~/dev/homebrew-tap
+```
 
 Use Homebrew's tap checkout for local installation checks. Edit the formula there before running these checks:
 

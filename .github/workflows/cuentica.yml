@@ -1,0 +1,57 @@
+name: Cuéntica formula
+
+on:
+  push:
+    paths:
+      - Formula/cuentica.rb
+      - .github/workflows/cuentica.yml
+  pull_request:
+    paths:
+      - Formula/cuentica.rb
+      - .github/workflows/cuentica.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cuentica-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CUENTICA_API_KEY: ''
+  HOMEBREW_NO_AUTO_UPDATE: '1'
+  HOMEBREW_NO_ANALYTICS: '1'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  formula:
+    name: Validate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - macos-15-intel
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+    steps:
+      - name: Set up Homebrew and check out tap
+        uses: Homebrew/actions/setup-homebrew@848c272c7bfe984a197bd4d16383f4c106ec61e6 # 2026.09.21.1
+        with:
+          stable: true
+          core: false
+          cask: false
+      - name: Check formula style
+        run: brew style magarcia/tap/cuentica
+      - name: Install release binary
+        run: brew install magarcia/tap/cuentica
+      - name: Test installed formula
+        run: brew test magarcia/tap/cuentica
+      - name: Audit formula
+        run: brew audit --strict --online magarcia/tap/cuentica
