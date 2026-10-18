@@ -34,7 +34,7 @@ class Cuentica < Formula
 
   test do
     ENV["CUENTICA_API_KEY"] = ""
-    assert_match "cuentica #{version}", shell_output("#{bin}/cuentica --version")
+    assert_match "cuentica v#{version}", shell_output("#{bin}/cuentica --version")
     assert_path_exists bash_completion/"cuentica"
     assert_path_exists zsh_completion/"_cuentica"
     assert_path_exists fish_completion/"cuentica.fish"
