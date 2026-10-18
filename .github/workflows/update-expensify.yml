@@ -1,0 +1,76 @@
+name: Update Expensify
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-expensify
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: '1'
+
+jobs:
+  update:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Set up Homebrew and check out tap
+        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+        with:
+          stable: true
+      - name: Check out tap with push credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Test formula updater
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Update to latest stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/update-expensify
+      - name: Check for formula changes
+        id: changes
+        run: |
+          if git diff --quiet -- Formula/expensify.rb; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Validate updated formula
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          brew style Formula/expensify.rb
+          brew install magarcia/tap/expensify
+          brew test magarcia/tap/expensify
+          brew audit --strict magarcia/tap/expensify
+      - name: Publish formula update
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- Formula/expensify.rb
+          git commit -m 'chore: update Expensify release'
+          git push origin HEAD
+      - name: Start installation checks on all platforms
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: gh workflow run expensify.yml --ref "$DEFAULT_BRANCH"

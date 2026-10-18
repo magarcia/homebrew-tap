@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+"""Update the Expensify formula from a verified stable GitHub release."""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+from urllib.request import Request, urlopen
+
+
+REPOSITORY = "magarcia/expensify-cli"
+RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
+FORMULA = Path(__file__).resolve().parent.parent / "Formula" / "expensify.rb"
+VERSION_PATTERN = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+PLATFORMS = (("darwin", "arm64"), ("darwin", "amd64"), ("linux", "arm64"), ("linux", "amd64"))
+
+
+def parse_version(value):
+    if not isinstance(value, str) or not re.fullmatch(VERSION_PATTERN, value):
+        raise ValueError("Expected a stable MAJOR.MINOR.PATCH version without leading zeroes")
+    return tuple(int(part) for part in value.split("."))
+
+
+def release_metadata(release):
+    if not isinstance(release, dict):
+        raise ValueError("Release metadata must be a JSON object")
+    if release.get("draft") is not False or release.get("prerelease") is not False:
+        raise ValueError("Only published stable releases can update the formula")
+    tag = release.get("tag_name")
+    if not isinstance(tag, str) or not tag.startswith("v"):
+        raise ValueError("Release tag must start with v")
+    version = tag[1:]
+    parse_version(version)
+
+    assets = release.get("assets")
+    if not isinstance(assets, list):
+        raise ValueError("Release assets must be a list")
+    expected = {f"expensify_{tag}_{system}_{arch}.tar.gz": (system, arch) for system, arch in PLATFORMS}
+    checksums = {}
+    for asset in assets:
+        if not isinstance(asset, dict):
+            raise ValueError("Release assets must be JSON objects")
+        name = asset.get("name")
+        if not isinstance(name, str) or name not in expected:
+            continue
+        platform = expected[name]
+        if platform in checksums:
+            raise ValueError(f"Duplicate release asset: {name}")
+        canonical_url = f"https://github.com/{REPOSITORY}/releases/download/{tag}/{name}"
+        if asset.get("browser_download_url") != canonical_url:
+            raise ValueError(f"Unexpected download URL for {name}")
+        digest = asset.get("digest")
+        if not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-fA-F]{64}", digest):
+            raise ValueError(f"Missing or invalid GitHub SHA-256 digest for {name}")
+        checksums[platform] = digest.removeprefix("sha256:").lower()
+
+    missing = [name for name, platform in expected.items() if platform not in checksums]
+    if missing:
+        raise ValueError(f"Missing release assets: {', '.join(missing)}")
+    return version, checksums
+
+
+def render_formula(release):
+    version, checksums = release_metadata(release)
+    lines = [
+        "class Expensify < Formula",
+        '  desc "Manage New Expensify expenses, reports, and workspaces"',
+        f'  homepage "https://github.com/{REPOSITORY}"',
+        f'  version "{version}"',
+        '  license "MIT"',
+    ]
+    for system, ruby_system in (("darwin", "macos"), ("linux", "linux")):
+        lines.extend(("", f"  on_{ruby_system} do"))
+        for index, (arch, ruby_arch) in enumerate((("arm64", "arm"), ("amd64", "intel"))):
+            if index:
+                lines.append("")
+            lines.extend((
+                f"    on_{ruby_arch} do",
+                f'      url "https://github.com/{REPOSITORY}/releases/download/v#{{version}}/'
+                f'expensify_v#{{version}}_{system}_{arch}.tar.gz"',
+                f'      sha256 "{checksums[(system, arch)]}"',
+                "    end",
+            ))
+        lines.append("  end")
+
+    return "\n".join(lines) + '''
+
+  def install
+    bin.install "expensify"
+    bash_completion.install "completions/expensify.bash" => "expensify"
+    zsh_completion.install "completions/_expensify"
+    fish_completion.install "completions/expensify.fish"
+    doc.install "README.md", "THIRD_PARTY_NOTICES", "docs"
+    pkgshare.install "skills"
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/expensify --version")
+
+    output = shell_output(
+      "#{bin}/expensify expense create --amount 1234 --currency USD " \\
+      "--merchant Homebrew --date 2026-10-18 --dry-run --no-input " \\
+      "--output llm --config-dir #{testpath}/config",
+    )
+    assert_match "- command: expense create", output
+    assert_match "- dryRun: true", output
+    assert_match '\"amount\":\"1234\"', output
+    assert_match '\"merchant\":\"Homebrew\"', output
+    assert_path_exists pkgshare/"skills/expensify/SKILL.md"
+  end
+end
+'''
+
+
+def update_formula(release, path=FORMULA):
+    content = render_formula(release)
+    if path.exists():
+        existing = path.read_text(encoding="utf-8")
+        current = re.search(r'^  version "([^"\n]+)"$', existing, flags=re.MULTILINE)
+        if current is None:
+            raise ValueError("Existing formula has no recognizable version; refusing to replace it")
+        requested = release["tag_name"][1:]
+        if parse_version(requested) < parse_version(current.group(1)):
+            raise ValueError(f"Refusing to downgrade Expensify from {current.group(1)} to {requested}")
+        if existing == content:
+            return False
+
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="\n", dir=path.parent, delete=False) as handle:
+            temporary_path = Path(handle.name)
+            handle.write(content)
+        temporary_path.chmod(0o644)
+        temporary_path.replace(path)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+    return True
+
+
+def fetch_release():
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": "expensify-homebrew-tap"}
+    token = os.environ.get("GH_TOKEN")
+    if token:
+        if "\n" in token or "\r" in token:
+            raise ValueError("GH_TOKEN contains a line break")
+        headers["Authorization"] = f"Bearer {token}"
+    with urlopen(Request(RELEASE_API, headers=headers), timeout=30) as response:
+        return json.load(response)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--release-json", type=Path, help="Read GitHub release metadata from a local JSON file")
+    args = parser.parse_args()
+    try:
+        if args.release_json:
+            with args.release_json.open(encoding="utf-8") as handle:
+                release = json.load(handle)
+        else:
+            release = fetch_release()
+        changed = update_formula(release)
+    except (OSError, ValueError) as error:
+        print(f"Unable to update Expensify: {error}", file=sys.stderr)
+        return 1
+    print("Updated Formula/expensify.rb" if changed else "Formula/expensify.rb is already current")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
