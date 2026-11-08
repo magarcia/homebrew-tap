@@ -5,25 +5,25 @@ class Expensify < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/magarcia/expensify-cli/releases/download/v0.3.1/expensify_v0.3.1_darwin_arm64.tar.gz"
-      sha256 "20d3966c4ca16d76cb9c92cedb684aa59a72cccf0029dd908021b332ccc2e521"
+      url "https://github.com/magarcia/expensify-cli/releases/download/v0.3.2/expensify_v0.3.2_darwin_arm64.tar.gz"
+      sha256 "0c5d57f5fbff01311d3936e3d3d7005a4bc3a6fa471477f5654e20ea254fe3ee"
     end
 
     on_intel do
-      url "https://github.com/magarcia/expensify-cli/releases/download/v0.3.1/expensify_v0.3.1_darwin_amd64.tar.gz"
-      sha256 "42af0dfa7781e5d196ca1ae6d3ce2d1156232ffca5e8c8dae8ce1167b42c1bba"
+      url "https://github.com/magarcia/expensify-cli/releases/download/v0.3.2/expensify_v0.3.2_darwin_amd64.tar.gz"
+      sha256 "b62390d3ecb559c84374686570aee9065b7a13114c7c397b4af392821282b16a"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/magarcia/expensify-cli/releases/download/v0.3.1/expensify_v0.3.1_linux_arm64.tar.gz"
-      sha256 "970e4e0d09b43b3b0f6ccd55f03bdcd8a49095ba468e23975d50a1c47df94aab"
+      url "https://github.com/magarcia/expensify-cli/releases/download/v0.3.2/expensify_v0.3.2_linux_arm64.tar.gz"
+      sha256 "c1ef5dcf9900838141f5ee464d279c48eff7a88e7bf0b72ddfa587134cd760d6"
     end
 
     on_intel do
-      url "https://github.com/magarcia/expensify-cli/releases/download/v0.3.1/expensify_v0.3.1_linux_amd64.tar.gz"
-      sha256 "9b3e77122e5ee356976d5d00db9c42c5585582cffeffddc96644365396bce0f6"
+      url "https://github.com/magarcia/expensify-cli/releases/download/v0.3.2/expensify_v0.3.2_linux_amd64.tar.gz"
+      sha256 "c815a05794d3b0f7f5eb9c4b216c09d6cda68cd32303af554e93500728dc2bea"
     end
   end
 
